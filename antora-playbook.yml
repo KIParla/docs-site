@@ -1,0 +1,25 @@
+site:
+  title: KIParla documentation
+content:
+  sources:
+    - url: .
+      start_path: docs
+    - url: https://github.com/KIParla/KIP.git
+      branches: [main]
+      start_path: docs
+    - url: https://github.com/KIParla/KIPasti.git
+      branches: [main]
+      start_path: docs
+
+antora:
+  extensions:
+    - '@antora/lunr-extension'
+
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+
+
+output:
+  dir: build/site
