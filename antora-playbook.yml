@@ -1,8 +1,10 @@
 site:
   title: KIParla documentation
+  start_page: portal::index.adoc
 content:
   sources:
-    - url: .
+    - url: https://github.com/KIParla/docs.git
+      branches: [main]
       start_path: docs
     - url: https://github.com/KIParla/KIP.git
       branches: [main]
