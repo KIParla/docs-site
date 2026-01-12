@@ -12,6 +12,12 @@ content:
     - url: https://github.com/KIParla/KIPasti.git
       branches: [main]
       start_path: docs
+    - url: https://github.com/KIParla/ParlaBO.git
+      branches: [main]
+      start_path: docs
+    - url: https://github.com/KIParla/ParlaTO.git
+      branches: [main]
+      start_path: docs
 
 antora:
   extensions:
