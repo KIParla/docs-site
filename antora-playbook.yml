@@ -18,6 +18,9 @@ content:
     - url: https://github.com/KIParla/ParlaTO.git
       branches: [main]
       start_path: docs
+    - url: https://github.com/KIParla/KIParla-collection.git
+      branches: [main]
+      start_path: docs
     - url: https://github.com/KIParla/lemmatization-project.git
       branches: [main]
       start_path: docs
