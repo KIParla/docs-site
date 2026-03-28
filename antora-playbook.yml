@@ -8,22 +8,22 @@ content:
       start_path: docs
     - url: https://github.com/KIParla/KIP.git
       branches: [main]
-      tags: ['v*']
+      tags: ['v*', '!v1.0.*', '!v1.1.0']
       start_path: docs
       version: true
     - url: https://github.com/KIParla/KIPasti.git
       branches: [main]
-      tags: ['v*']
+      tags: ['v*', '!v1.0.*', '!v1.1.0']
       start_path: docs
       version: true
     - url: https://github.com/KIParla/ParlaBO.git
       branches: [main]
-      tags: ['v*']
+      tags: ['v*', '!v1.0.*', '!v1.1.0']
       start_path: docs
       version: true
     - url: https://github.com/KIParla/ParlaTO.git
       branches: [main]
-      tags: ['v*']
+      tags: ['v*', '!v1.0.*', '!v1.1.0']
       start_path: docs
       version: true
     - url: https://github.com/KIParla/KIParla-collection.git
