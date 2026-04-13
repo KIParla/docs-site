@@ -31,6 +31,9 @@ content:
     - url: https://github.com/KIParla/lemmatization-project.git
       branches: [main]
       start_path: docs
+    - url: https://github.com/KIParla/NoSketchEngine.git
+      branches: [main]
+      start_path: docs
 
 antora:
   extensions:
