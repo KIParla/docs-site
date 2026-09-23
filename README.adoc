@@ -1,0 +1,335 @@
+= KIParla documentation site
+:toc: macro
+:toclevels: 3
+
+This repository is the *build harness* for the KIParla documentation site
+published via GitHub Pages (see the `github-pages` environment URL in the repo's
+Actions → Deployments).
+
+It contains almost no content of its own. Instead, it uses
+https://antora.org[Antora] to aggregate the `docs/` folder of every KIParla
+repository into a single versioned site, and a GitHub Actions workflow to
+rebuild and deploy it whenever any of those repositories change.
+
+toc::[]
+
+== At a glance
+
+[cols="1,3", options="header"]
+|===
+| Thing | Where
+
+| Playbook (production) | `antora-playbook.yml`
+| Playbook (local preview) | `antora-playbook.local.yml`
+| Build command | `npm run build` (→ `npx antora --fetch antora-playbook.yml`)
+| Local preview | `npm run watch` (rebuild on change + live-reload server)
+| Output | `build/site/` (production), `build/site-local/` (local)
+| Deploy | `.github/workflows/pages.yml` → GitHub Pages
+| UI theme | https://github.com/KIParla/antora-ui[KIParla/antora-ui] (prebuilt bundle)
+| Search | `@antora/lunr-extension` (client-side, `search-index.js`)
+| Site landing page | `portal::index.adoc` (from the `docs` repo)
+|===
+
+== How it works
+
+=== The aggregation model
+
+Antora builds a site from *content sources* — git repositories, each contributing
+one or more *component versions*. In KIParla, every repository keeps its own
+documentation under a top-level `docs/` folder laid out as an Antora component:
+
+----
+docs/
+  antora.yml                      # component name, title, version, nav
+  modules/
+    ROOT/
+      nav.adoc                    # left-hand navigation for this component
+      pages/
+        index.adoc                # component landing page
+        *.adoc                    # content pages
+----
+
+`antora-playbook.yml` lists every source repo. At build time Antora clones each
+one, reads its `docs/antora.yml`, and merges the result. The component `name` in
+`antora.yml` becomes the URL segment and the `xref` target prefix
+(e.g. `xref:tools::workflows.adoc[]`).
+
+=== Content sources
+
+[cols="2,1,2,3", options="header"]
+|===
+| Repository | Component | Versions pulled | Notes
+
+| `KIParla/docs`
+| `portal` (v1.0)
+| `main` branch
+| The site's home page and maintainer guides. `start_page` points here.
+
+| `KIParla/KIP`
+| `KIP`
+| `main` + tags `v*`
+| Module docs. Tags produce the version dropdown.
+
+| `KIParla/KIPasti`
+| `KIPasti`
+| `main` + tags `v*`
+| Module docs.
+
+| `KIParla/ParlaBO`
+| `ParlaBO`
+| `main` + tags `v*`
+| Module docs.
+
+| `KIParla/ParlaTO`
+| `ParlaTO`
+| `main` + tags `v*`
+| Module docs.
+
+| `KIParla/KIParla-collection`
+| `collection` (v1.0)
+| `main` branch
+| The aggregated-release docs.
+
+| `KIParla/tools`
+| `tools` (`dev`)
+| `main` branch
+| Standalone maintenance/transformation scripts, normalization pipeline,
+  validation, pipeline-verification log.
+
+| `KIParla/lemmatization-project`
+| `lemmatization` (v1.0)
+| `main` branch
+| Manual lemmatization / POS-tagging guidelines.
+
+| `KIParla/KIParla-Forest`
+| `kiparla-forest` (v1.0)
+| `main` branch
+| Treebank project docs.
+
+| `KIParla/KIParla-NoSketch-Data`
+| `portal` (v1.0), module `nosketch`
+| `main` branch
+| NoSketch Engine docs. Contributes a `nosketch` module to the `portal`
+  component (same `name`/`version` as `KIParla/docs`, no `nav` of its own), so
+  its pages are linked from the portal navigation rather than appearing as a
+  separate component.
+|===
+
+NOTE: Module repos (`KIP`, `KIPasti`, `ParlaBO`, `ParlaTO`) are pulled from
+*both* `main` and their `v*` tags, so the version picker shows released versions
+plus an in-progress `main`. The other components ship a single version set in
+their own `antora.yml`.
+
+=== The UI theme
+
+The look and feel comes from a prebuilt UI bundle, not from this repo. The
+production playbook fetches it from the
+https://github.com/KIParla/antora-ui[KIParla/antora-ui] repo's `latest` release:
+
+[source,yaml]
+----
+ui:
+  bundle:
+    url: https://github.com/KIParla/antora-ui/releases/download/latest/ui-bundle.zip
+    snapshot: true
+----
+
+`snapshot: true` tells Antora to re-download the bundle on every build even
+though the URL is unchanged. To change site styling, colours, the version
+picker, etc., work in `antora-ui`, cut a new `latest` release with the built
+`ui-bundle.zip`, and rebuild this site.
+
+The `supplemental_files` block injects a `.nojekyll` file into the output so
+GitHub Pages serves Antora's `_` asset directory verbatim.
+
+=== Search
+
+`@antora/lunr-extension` runs during the build and emits `search-index.js`
+alongside the site. Search is entirely client-side; there is no server
+component. The extension version is pinned to `1.0.0-alpha.5` in
+`package.json` — treat upgrades with care, the alpha API has shifted before.
+
+=== Deployment
+
+`.github/workflows/pages.yml` runs on:
+
+* every push to `main` in this repo (playbook or config changes),
+* a `repository_dispatch` event of type `docs-updated` (see below),
+* manual dispatch from the Actions tab.
+
+The job installs Node 18, runs `npm ci`, builds with
+`npx antora --fetch antora-playbook.yml`, and deploys `build/site` via
+`actions/deploy-pages`. Concurrency group `github-pages` with
+`cancel-in-progress: false` means overlapping triggers queue rather than
+clobber each other.
+
+=== Cross-repo rebuild trigger
+
+This site does not poll its sources. Each content repo carries a
+`.github/workflows/notify-docs-site.yml` that, on a push to `main` touching
+`docs/**`, sends a `repository_dispatch` (`event_type: docs-updated`) to
+`KIParla/docs-site`, which starts a fresh Pages build.
+
+Requirements for that to work:
+
+* the content repo needs a `DOCS_SITE_TOKEN` secret — a PAT with `repo` scope
+  on `KIParla/docs-site`;
+* releasing a new module version (a `v*` tag) does *not* touch `docs/**`, so it
+  may not trigger a rebuild on its own — run the workflow manually or push a
+  docs change if a new version isn't appearing.
+
+== Local development
+
+=== Prerequisites
+
+* Node.js 18+ (matches CI)
+* `npm ci` in this directory
+* For `antora-playbook.local.yml`: local clones laid out next to this repo,
+  at the relative paths the playbook uses — `../docs`, `../moduli/KIP`,
+  `../moduli/KIPasti`, `../moduli/ParlaBO`, `../moduli/ParlaTO`, `../tools`,
+  `../KIParla-NoSketch-Data` — and a local UI bundle at
+  `../antora-ui-default/build/ui-bundle.zip`.
+
+=== Build the production site
+
+[source,console]
+----
+npm ci
+npm run build
+# open build/site/index.html
+----
+
+`--fetch` forces Antora to re-pull every remote source and the UI bundle. Drop
+it (`npx antora antora-playbook.yml`) for a faster rebuild against already-cached
+sources.
+
+=== Build against local checkouts
+
+`antora-playbook.local.yml` points every source at a local checkout (paths
+relative to this repo) and uses a locally built UI bundle, so you can preview
+unpushed doc changes without network access:
+
+[source,console]
+----
+# build the UI bundle once (in the antora-ui checkout)
+cd ../antora-ui-default && npx gulp bundle && cd -
+
+npm run build:local
+# open build/site-local/index.html
+----
+
+Adjust the paths in `antora-playbook.local.yml` if your checkouts live
+elsewhere. It does *not* include `collection`, `lemmatization-project` or
+`kiparla-forest`, so xrefs into those components will be reported as broken in
+local builds — add sources for them if you need them.
+
+Module repos are read with `branches: [main]` and `tags: ['v*']`. Antora only
+uses the working tree for a local repo's *currently checked-out* branch; for
+other refs it reads committed content from git. If a module checkout is on
+another branch (e.g. `dev`), uncommitted edits there won't show up.
+
+CAUTION: Don't deploy from `antora-playbook.local.yml` and don't let its paths
+leak into the production playbook.
+
+=== Serve locally
+
+For iterative editing, run:
+
+[source,console]
+----
+npm run watch
+----
+
+This runs two processes together (`concurrently`):
+
+* `watch:build` — `nodemon` watches the `docs/` folders of the local checkouts
+  and `antora-playbook.local.yml`, and reruns `npm run build:local` on any
+  `.adoc`/`.yml` change;
+* `serve:local` — `browser-sync` serves `build/site-local/` and live-reloads
+  the browser when the output changes (URL printed on startup, usually
+  http://localhost:3000).
+
+To serve a one-off build without watching, any static server works:
+
+[source,console]
+----
+npx http-server build/site -c-1
+----
+
+Opening `index.html` from `file://` mostly works but breaks search and some
+absolute-path assets.
+
+== Content inventory
+
+Current pages, by component. Content lives in the source repos, *not here* —
+edit it there.
+
+.portal (`KIParla/docs`)
+* `index.adoc` — site home: corpus overview, module table, derived projects,
+  maintainer guides
+* `release-guide.adoc` — releasing a new module version
+* `collection-automation.adoc` — the KIParla-collection rebuild pipeline
+
+.tools (`KIParla/tools`)
+* `index.adoc`, `scripts.adoc`, `normalize.adoc` (normalization pipeline),
+  `testing.adoc`, `workflows.adoc`, `pipeline-verification.adoc`,
+  `validation-errors.adoc`, `validation-log.adoc`, `changelog.adoc`
+
+.collection (`KIParla/KIParla-collection`)
+* `index.adoc` only
+
+.lemmatization (`KIParla/lemmatization-project`)
+* `index.adoc`, `patching.adoc`, `faq.adoc`
+
+.kiparla-forest (`KIParla/KIParla-Forest`)
+* `index.adoc` only
+
+.portal / `nosketch` module (`KIParla/KIParla-NoSketch-Data`)
+* `index.adoc`, `how-to-search.adoc`, `running-locally.adoc`, `technical.adoc`
+
+.KIP / KIPasti / ParlaBO / ParlaTO
+* Each module repo's `docs/` (pulled from `main` and `v*` tags). Not checked
+  out locally; inspect on GitHub.
+
+=== Gaps / TODO
+
+* `collection`, `kiparla-forest` are single-page stubs.
+* Module docs (`KIP` etc.) are versioned but a `v*` tag alone won't rebuild the
+  site — see <<Cross-repo rebuild trigger>>.
+* `antora-playbook.local.yml` omits `collection`, `lemmatization-project` and
+  `kiparla-forest`.
+* No automated link-checking or build validation on PRs to this repo — the
+  first signal of a broken `xref` is a failed Pages deploy.
+
+== Troubleshooting
+
+[cols="1,3", options="header"]
+|===
+| Symptom | Likely cause
+
+| A new module version isn't in the picker
+| The `v*` tag didn't touch `docs/**`, so no `docs-updated` dispatch fired. Run
+  the Pages workflow manually.
+
+| Duplicate nav entries / wrong version labels
+| A source repo has both a `main` branch and tags contributing the same
+  component — check `branches` / `tags` filters in the playbook (history shows
+  past fixes here).
+
+| Styling looks stale after an `antora-ui` change
+| No new `latest` release of `antora-ui` with a rebuilt `ui-bundle.zip`, or a
+  CDN cache. `snapshot: true` should defeat the latter on `--fetch`.
+
+| Search box returns nothing
+| `search-index.js` missing from the deploy, or `@antora/lunr-extension`
+  disabled in the playbook's `antora.extensions`.
+
+| Local build can't find a module
+| `antora-playbook.local.yml` paths don't match your checkouts.
+|===
+
+== See also
+
+* Antora docs: https://docs.antora.org
+* Playbook reference: https://docs.antora.org/antora/latest/playbook/
+* `KIParla/antora-ui` — the UI theme project
