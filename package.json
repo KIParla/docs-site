@@ -2,11 +2,20 @@
   "name": "docs-site",
   "private": true,
   "scripts": {
-    "build": "antora --fetch antora-playbook.yml"
+    "build": "antora --fetch antora-playbook.yml",
+    "build:local": "antora antora-playbook.local.yml",
+    "watch:build": "nodemon --watch ../docs --watch ../moduli/KIP/docs --watch ../moduli/KIP/docs --watch ../moduli/KIPasti/docs --watch ../moduli/ParlaBO/docs --watch ../moduli/ParlaTO/docs --watch ../tools/docs --watch ../KIParla-NoSketch-Data/docs --watch antora-playbook.local.yml --ext adoc,yml --delay 1 --exec \"npm run build:local\"",
+    "serve:local": "browser-sync start --server build/site-local --files \"build/site-local/**/*\" --no-open",
+    "watch": "concurrently -k -n build,serve -c blue,green \"npm:watch:build\" \"npm:serve:local\""
   },
   "dependencies": {
     "@antora/cli": "^3.1.0",
-    "@antora/site-generator": "^3.1.0",
-    "@antora/lunr-extension": "1.0.0-alpha.5"
+    "@antora/lunr-extension": "1.0.0-alpha.5",
+    "@antora/site-generator": "^3.1.0"
+  },
+  "devDependencies": {
+    "browser-sync": "^3.0.4",
+    "concurrently": "^10.0.5",
+    "nodemon": "^3.1.14"
   }
 }

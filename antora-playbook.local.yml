@@ -1,0 +1,48 @@
+site:
+  title: KIParla documentation
+  start_page: portal::index.adoc
+content:
+  sources:
+    - url: ../docs
+      branches: [main]
+      start_path: docs
+    - url: ../moduli/KIP
+      branches: [main]
+      tags: ['v*']
+      start_path: docs
+    - url: ../moduli/KIPasti
+      branches: [main]
+      tags: ['v*']
+      start_path: docs
+    - url: ../moduli/ParlaBO
+      branches: [main]
+      tags: ['v*']
+      start_path: docs
+    - url: ../moduli/ParlaTO
+      branches: [main]
+      tags: ['v*']
+      start_path: docs
+    - url: ../tools
+      branches: [HEAD]
+      start_path: docs
+    - url: ../KIParla-NoSketch-Data
+      branches: [HEAD]
+      start_path: docs
+
+antora:
+  extensions:
+    - '@antora/lunr-extension'
+
+ui:
+  bundle:
+    url: ../antora-ui-default/build/ui-bundle.zip
+  supplemental_files:
+  - path: ui.yml
+    contents: |
+      static_files:
+      - .nojekyll
+  - path: .nojekyll
+
+
+output:
+  dir: build/site-local
