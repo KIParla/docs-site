@@ -22,6 +22,14 @@ content:
       branches: [main]
       tags: ['v*']
       start_path: docs
+    - url: https://github.com/KIParla/Stra-ParlaBO.git
+      branches: [main]
+      tags: ['v*']
+      start_path: docs
+    - url: https://github.com/KIParla/Stra-ParlaTO.git
+      branches: [main]
+      tags: ['v*']
+      start_path: docs
     - url: https://github.com/KIParla/KIParla-collection.git
       branches: [main]
       start_path: docs
