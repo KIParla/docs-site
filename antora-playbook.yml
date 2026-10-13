@@ -7,19 +7,31 @@ content:
       branches: [main]
       start_path: docs
     - url: https://github.com/KIParla/KIP.git
-      branches: [main]
+      branches: ~
       tags: ['v*']
       start_path: docs
     - url: https://github.com/KIParla/KIPasti.git
-      branches: [main]
+      branches: ~
       tags: ['v*']
       start_path: docs
     - url: https://github.com/KIParla/ParlaBO.git
-      branches: [main]
+      branches: ~
       tags: ['v*']
       start_path: docs
     - url: https://github.com/KIParla/ParlaTO.git
-      branches: [main]
+      branches: ~
+      tags: ['v*']
+      start_path: docs
+    - url: https://github.com/KIParla/ParlaBZ.git
+      branches: ~
+      tags: ['v*']
+      start_path: docs
+    - url: https://github.com/KIParla/Stra-ParlaBO.git
+      branches: ~
+      tags: ['v*']
+      start_path: docs
+    - url: https://github.com/KIParla/Stra-ParlaTO.git
+      branches: ~
       tags: ['v*']
       start_path: docs
     - url: https://github.com/KIParla/KIParla-collection.git
